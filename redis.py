@@ -1,13 +1,36 @@
 import socket
 import threading
-import time
+import os
 import json
 import datetime
 
 class MiniRedis:
-    def __init__(self):
+    def __init__(self, filename=""):
         self.store = {}
         self.expirations = {}
+        self.filename = filename
+        if self.filename != "":
+            self.load_from_file()
+
+    def load_from_file(self):
+        print("Trying gile: ", self.filename)
+        if os.path.exists(self.filename):
+            try:
+                with open(self.filename, "r") as f:
+                    self.store = json.load(f)
+                print("Database loaded successfully.")
+            except Exception as e:
+                print(f"Error loading database: {e}")
+        else:
+            print("No previous database found. Starting fresh.")
+
+    def save(self):
+        try:
+            with open(self.filename, "w") as f:
+                json.dump(self.store, f)
+            return "Database saved successfully"
+        except Exception as e:
+            return "Error saving database"
 
     def processData(self, data):
         data = data.split(" ")
@@ -96,6 +119,14 @@ class MiniRedis:
                 else:
                     self.store[key] = str(val - 1)
                     return "Successfully decremented key"
+        elif command == "SAVE":
+            if self.filename != "":
+                return self.save()
+            else:
+                if len(message) != 1:
+                    return "Invalid SAVE command"
+                self.filename = message[0].rstrip()
+                return self.save()
 
     def handleClient(self, conn, addr):
         print(f"Connected by {addr}")
@@ -122,7 +153,7 @@ class MiniRedis:
 
 
 def main():
-    obj = MiniRedis()
+    obj = MiniRedis(filename="/Users/umaparhar/Learning:Projects/Redis/miniredis/test.json")
     obj.startTCPServer()
 
 if __name__ == "__main__":
