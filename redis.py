@@ -2,10 +2,12 @@ import socket
 import threading
 import time
 import json
+import datetime
 
 class MiniRedis:
     def __init__(self):
         self.store = {}
+        self.expirations = {}
 
     def processData(self, data):
         data = data.split(" ")
@@ -15,15 +17,50 @@ class MiniRedis:
         message = data[1:]
 
         if command == "SET":
-            if len(message) != 2:
+            if len(message) < 2:
                 return "Error"
-            self.store[message[0].rstrip()] = message[1].rstrip()
+            key = message[0].rstrip()
+            val = message[1].rstrip()
+            if len(message) == 2:
+                self.store[key] = val
+            else:
+                exp_command = message[2].upper()
+                curr_time = datetime.datetime.now()
+                print("msg len: ", len(message))
+                if len(message) < 4:
+                    return "Invalid set command"
+                exp_time = float(message[3].rstrip())
+                print("exp command: ")
+                #add expiration date
+                if exp_command == "EX":
+                    self.store[key] = val
+                    self.expirations[key] = curr_time + datetime.timedelta(seconds=exp_time)
+                elif exp_command == "PX":
+                    self.store[key] = val
+                    self.expirations[key] = curr_time + datetime.timedelta(milliseconds=exp_time)
+                else:
+                    return "Invalid set command"
             return "Successfully added to store"
-        elif command == "GET":
+        elif command == "GET" or command == "EXISTS":
             if len(message) != 1:
                 return "Error"
-            if message[0].rstrip() in self.store:
-                return self.store[message[0].rstrip()]
+            key = message[0].rstrip()
+            if key in self.store:
+                if key in self.expirations:
+                    if self.expirations[key] < datetime.datetime.now():
+                        del self.expirations[key]
+                        del self.store[key]
+                        return "Key not in store"
+                    else:
+                        if command == "GET":
+                            return self.store[key]
+                        else:
+                            return "Key exists in store"
+                else:
+                    if command == "GET":
+                        return self.store[key]
+                    else:
+                        return "Key exists in store"
             return "Key not in store"
 
     def handleClient(self, conn, addr):
