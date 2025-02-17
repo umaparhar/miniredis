@@ -13,16 +13,15 @@ class MiniRedis:
             self.load_from_file()
 
     def load_from_file(self):
-        print("Trying gile: ", self.filename)
         if os.path.exists(self.filename):
             try:
                 with open(self.filename, "r") as f:
                     self.store = json.load(f)
-                print("Database loaded successfully.")
+                print("Database loaded successfully")
             except Exception as e:
-                print(f"Error loading database: {e}")
+                print("Error loading database")
         else:
-            print("No previous database found. Starting fresh.")
+            print("No previous database found, starting fresh")
 
     def save(self):
         try:
@@ -49,12 +48,9 @@ class MiniRedis:
             else:
                 exp_command = message[2].upper()
                 curr_time = datetime.datetime.now()
-                print("msg len: ", len(message))
                 if len(message) < 4:
                     return "Invalid SET command"
                 exp_time = float(message[3].rstrip())
-                print("exp command: ")
-                #add expiration date
                 if exp_command == "EX":
                     self.store[key] = val
                     self.expirations[key] = curr_time + datetime.timedelta(seconds=exp_time)
