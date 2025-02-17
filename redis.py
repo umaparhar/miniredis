@@ -18,7 +18,7 @@ class MiniRedis:
 
         if command == "SET":
             if len(message) < 2:
-                return "Error"
+                return "Invalid SET command"
             key = message[0].rstrip()
             val = message[1].rstrip()
             if len(message) == 2:
@@ -28,7 +28,7 @@ class MiniRedis:
                 curr_time = datetime.datetime.now()
                 print("msg len: ", len(message))
                 if len(message) < 4:
-                    return "Invalid set command"
+                    return "Invalid SET command"
                 exp_time = float(message[3].rstrip())
                 print("exp command: ")
                 #add expiration date
@@ -39,11 +39,13 @@ class MiniRedis:
                     self.store[key] = val
                     self.expirations[key] = curr_time + datetime.timedelta(milliseconds=exp_time)
                 else:
-                    return "Invalid set command"
+                    return "Invalid SET command"
             return "Successfully added to store"
         elif command == "GET" or command == "EXISTS":
             if len(message) != 1:
-                return "Error"
+                if command == "GET":
+                    return "Invalid GET command"
+                return "Invalid EXISTS command"
             key = message[0].rstrip()
             if key in self.store:
                 if key in self.expirations:
@@ -62,6 +64,38 @@ class MiniRedis:
                     else:
                         return "Key exists in store"
             return "Key not in store"
+        elif command == "DEL":
+            if len(message) != 1:
+                return "Invalid DEL Command"
+            key = message[0].rstrip()
+            if key not in self.store:
+                return "Key not in store"
+            else:
+                if key in self.expirations:
+                    del self.expirations[key]
+                del self.store[key]
+                return "Successfully deleted key from store"
+        elif command == "INCR" or command == "DECR":
+            if len(message) != 1:
+                if command == "INCR":
+                    return "Invalid INCR command"
+                else:
+                    return "Invalid DECR command"
+            key = message[0].rstrip()
+            if key not in self.store:
+                return "Key not in store"
+            if not self.store[key].isnumeric():
+                if command == "INCR":
+                    return "Invalid INCR command, value is not a number"
+                return "Invalid DECR command, value is not a number"
+            else:
+                val = int(self.store[key])
+                if command == "INCR":
+                    self.store[key] = str(val + 1)
+                    return "Successfully incremented key"
+                else:
+                    self.store[key] = str(val - 1)
+                    return "Successfully decremented key"
 
     def handleClient(self, conn, addr):
         print(f"Connected by {addr}")
