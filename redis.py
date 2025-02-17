@@ -153,7 +153,7 @@ class MiniRedis:
 
 
 def main():
-    obj = MiniRedis(filename="/Users/umaparhar/Learning:Projects/Redis/miniredis/test.json")
+    obj = MiniRedis()
     obj.startTCPServer()
 
 if __name__ == "__main__":
